@@ -75,7 +75,7 @@ public class notatest extends LinearOpMode {
                 imu.resetYaw();
             }
             if (gamepad1.a) {
-                intake.setVelocity(1600);
+                intake.setVelocity(1500);
             }
             if (gamepad1.b) {
                 intake.setVelocity(0);
