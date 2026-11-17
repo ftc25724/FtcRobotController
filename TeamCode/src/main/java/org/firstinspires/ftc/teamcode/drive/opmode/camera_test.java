@@ -1,6 +1,9 @@
 package org.firstinspires.ftc.teamcode.drive.opmode;
 
 import com.qualcomm.hardware.limelightvision.Limelight3A;
+
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
@@ -19,7 +22,7 @@ import com.qualcomm.hardware.limelightvision.LLResultTypes.FiducialResult;
 
 public class camera_test extends LinearOpMode {
 
-    private ElapsedTime runtime = new ElapsedTime();
+    private final ElapsedTime runtime = new ElapsedTime();
 
     Limelight3A limelight;
 
@@ -30,7 +33,7 @@ public class camera_test extends LinearOpMode {
         DcMotor backL = hardwareMap.get(DcMotor.class, "blm");
         DcMotor frontR = hardwareMap.get(DcMotor.class, "frm");
         DcMotor backR = hardwareMap.get(DcMotor.class, "brm");
-        DcMotorEx spin = hardwareMap.get(DcMotorEx.class, "spin");
+        DcMotorEx spin = hardwareMap.get(DcMotorEx.class, "spin"); // + is left - is right
 
         IMU imu = hardwareMap.get(IMU.class, "imu");
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
@@ -43,6 +46,7 @@ public class camera_test extends LinearOpMode {
         backL.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         frontR.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         backR.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        spin.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         frontL.setDirection(DcMotor.Direction.REVERSE);
         backL.setDirection(DcMotor.Direction.REVERSE);
@@ -53,13 +57,13 @@ public class camera_test extends LinearOpMode {
         backL.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         frontR.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         backR.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        spin.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
         frontL.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         backL.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         frontR.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         backR.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-
-
+        spin.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         IMU.Parameters parameters = new IMU.Parameters(new RevHubOrientationOnRobot(
                 RevHubOrientationOnRobot.LogoFacingDirection.RIGHT,
@@ -76,18 +80,23 @@ public class camera_test extends LinearOpMode {
         runtime.reset();
 
         int speeddiv = 1;
-        int combo = 0;
+        int AprilTag = 0;
+        Integer[] redTags = {30,31,32,33,34,35,36,37};
+        Integer[] blueTags = {30,31,32,33,34,35,36,37};
+        double tx = 0;
+        double ty = 0;
+        double ta = 0;
 
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
 
             double botHeading = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS);
             // POV Mode uses left joystick to go forward & strafe, and right joystick to rotate.
-            double axial    = -gamepad1.left_stick_y;  // Note: pushing stick forward gives negative value
-            double lateral  =  gamepad1.left_stick_x;
-            double yaw      =  gamepad1.right_stick_x * 0.7;
+            double axial = -gamepad1.left_stick_y;  // Note: pushing stick forward gives negative value
+            double lateral = gamepad1.left_stick_x;
+            double yaw = gamepad1.right_stick_x * 0.7;
             double lateralx = lateral * Math.cos(-botHeading) - axial * Math.sin(-botHeading);
-            double axialy   = lateral * Math.sin(-botHeading) + axial * Math.cos(-botHeading);
+            double axialy = lateral * Math.sin(-botHeading) + axial * Math.cos(-botHeading);
             double denominator = Math.max(Math.abs(axialy) + Math.abs(lateralx) + Math.abs(yaw), 1);
 
             double leftFrontPower = (axialy + lateralx + yaw) / denominator;
@@ -105,15 +114,15 @@ public class camera_test extends LinearOpMode {
                     telemetry.addData("MT1 Location", "(" + x + ", " + y + ")");
                 }
 
-                double tx = result.getTx(); // How far left or right the target is (degrees)
-                double ty = result.getTy(); // How far up or down the target is (degrees)
-                double ta = result.getTa(); // How big the target looks (0%-100% of the image)
+                tx = result.getTx();
+                ty = result.getTy(); // How far up or down the target is (degrees)
+                ta = result.getTa(); // How big the target looks (0%-100% of the image)
                 List<FiducialResult> tags = result.getFiducialResults();
 
                 if (!tags.isEmpty()) {
-                    for(FiducialResult tag : tags){
-                        combo = tag.getFiducialId();
-                        telemetry.addData("Target ID", combo);
+                    for (FiducialResult tag : tags) {
+                        AprilTag = tag.getFiducialId();
+                        telemetry.addData("Target ID", AprilTag);
                     }
                 }
                 telemetry.addData("Target X", tx);
@@ -122,6 +131,29 @@ public class camera_test extends LinearOpMode {
             } else {
                 telemetry.addData("Limelight", "No Targets");
             }
+
+            /*
+            if (tx > 0 && Arrays.asList(redTags).contains(AprilTag)) {
+                spin.setPower(-0.02);
+            } else if (tx < 0 && Arrays.asList(redTags).contains(AprilTag)) {
+                spin.setPower(0.02);
+//            } else if (!Arrays.asList(redTags).contains(AprilTag)) {
+//                spin.setTargetPosition(1);
+//                if (spin.getCurrentPosition() < spin.getTargetPosition() && spin.getTargetPosition() == 1) {
+//                    spin.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+//                    spin.setPower(0.02);
+//                } else if (spin.getCurrentPosition() > spin.getTargetPosition() && spin.getTargetPosition() == 1) {
+//                    spin.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+//                    spin.setPower(-0.02);
+//                } else {
+//                    spin.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+//                    spin.setPower(0);
+//                    spin.setTargetPosition(0);
+//                }
+            } else if (!Arrays.asList(redTags).contains(AprilTag)) {
+                spin.setPower(0);
+            }
+             */
 
             // Send calculated power to wheels
             frontL.setPower(leftFrontPower / speeddiv);
