@@ -32,10 +32,12 @@ public class opmode_1 extends LinearOpMode {
         DcMotor frontR = hardwareMap.get(DcMotor.class, "frm");
         DcMotor backR = hardwareMap.get(DcMotor.class, "brm");
 
-        DcMotorEx launch = hardwareMap.get(DcMotorEx.class, "launch");
         DcMotor intake = hardwareMap.get(DcMotor.class, "intake");
+        DcMotorEx pass = hardwareMap.get(DcMotorEx.class, "passthru");
+        DcMotorEx launch = hardwareMap.get(DcMotorEx.class, "launch");
 
         Servo DTI = hardwareMap.get(Servo.class, "dti");
+        Servo STP = hardwareMap.get(Servo.class, "stp");
 
         IMU imu = hardwareMap.get(IMU.class, "imu");
 
@@ -44,7 +46,11 @@ public class opmode_1 extends LinearOpMode {
         frontR.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         backR.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
+        intake.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        pass.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
         DTI.setPosition(0.45);
+        STP.setPosition(0);
 
         frontL.setDirection(DcMotor.Direction.REVERSE);
         backL.setDirection(DcMotor.Direction.REVERSE);
@@ -52,6 +58,7 @@ public class opmode_1 extends LinearOpMode {
         backR.setDirection(DcMotor.Direction.FORWARD);
 
         intake.setDirection(DcMotor.Direction.REVERSE);
+        pass.setDirection(DcMotor.Direction.FORWARD);
 
         IMU.Parameters parameters = new IMU.Parameters(new RevHubOrientationOnRobot(
                 RevHubOrientationOnRobot.LogoFacingDirection.RIGHT,
@@ -69,7 +76,7 @@ public class opmode_1 extends LinearOpMode {
         waitForStart();
         runtime.reset();
 
-        int speeddiv = 4;
+        int speeddiv = 2;
 
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
@@ -92,14 +99,17 @@ public class opmode_1 extends LinearOpMode {
 
             if (gamepad1.y && speeddiv == 4) {
                 speeddiv = 2;
+                sleep(100);
             }
 
             if (gamepad1.y && speeddiv == 2) {
                 speeddiv = 8;
+                sleep(100);
             }
 
             if (gamepad1.y && speeddiv == 8) {
                 speeddiv = 4;
+                sleep(100);
             }
 
             if (gamepad1.options) {
@@ -108,10 +118,12 @@ public class opmode_1 extends LinearOpMode {
 
             if (gamepad1.dpad_up) {
                 intake.setPower(100);
+                pass.setVelocity(1700);
             }
 
             if (gamepad1.dpad_down) {
                 intake.setPower(0);
+                pass.setVelocity(0);
             }
 
             if (gamepad1.a) {
@@ -120,6 +132,14 @@ public class opmode_1 extends LinearOpMode {
 
             if (gamepad1.b) {
                 launch.setVelocity(0);
+            }
+
+            if (gamepad1.dpad_left) {
+                STP.setPosition(0);
+            }
+
+            if (gamepad1.dpad_right) {
+                STP.setPosition(0.1);
             }
 
             if (gamepad1.x) {
@@ -145,9 +165,10 @@ public class opmode_1 extends LinearOpMode {
             telemetry.addData("speed", speeddiv);
             telemetry.update();
 
-            dashboardTelemetry.addData("Status", "Run Time: " + runtime.toString());
-            dashboardTelemetry.addData("Front left/Right", "%4.2f, %4.2f", leftFrontPower, rightFrontPower);
-            dashboardTelemetry.addData("Back  left/Right", "%4.2f, %4.2f", leftBackPower, rightBackPower);
+            dashboardTelemetry.addData("Front left", "%4.2f", leftFrontPower);
+            dashboardTelemetry.addData("Front Right", "%4.2f", rightFrontPower);
+            dashboardTelemetry.addData("Back  left", "%4.2f", leftBackPower);
+            dashboardTelemetry.addData("Back  Right", "%%4.2f", rightBackPower);
             dashboardTelemetry.addData("Axial  ", "%4.2f", axial);
             dashboardTelemetry.addData("lateral  ", "%4.2f", lateral);
             dashboardTelemetry.addData("yaw  ", "%4.2f", yaw);
